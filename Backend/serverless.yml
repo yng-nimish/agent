@@ -1,0 +1,39 @@
+service: free-ai-commerce-agent
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: us-east-1
+  environment:
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
+    AWS_REGION: ${env:AWS_REGION}
+    S3_BUCKET: ${env:S3_BUCKET}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource: "arn:aws:s3:::${env:S3_BUCKET}/*"
+
+functions:
+  api:
+    handler: main.handler
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+
+package:
+  patterns:
+    - '!venv/**'
+    - '!__pycache__/**'
+    - '*.py'
+    - 'faiss_index/**'
