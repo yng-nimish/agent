@@ -6,7 +6,7 @@ function Recommendation() {
 
   const handleSubmit = async () => {
     const res = await fetch(
-      "https://your-api-gateway-id.execute-api.us-east-1.amazonaws.com/dev/recommend",
+      "https://cwxb04pos2.execute-api.us-east-1.amazonaws.com/prod/recommend",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

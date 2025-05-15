@@ -14,7 +14,7 @@ function ChatInterface() {
     try {
       // Update to API Gateway URL in production
       const response = await axios.post(
-        "https://<api-id>.execute-api.<region>.amazonaws.com/dev/chat",
+        "https://cwxb04pos2.execute-api.us-east-1.amazonaws.com/prod",
         { message: input }
       );
       setMessages([

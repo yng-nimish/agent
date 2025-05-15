@@ -37,6 +37,10 @@ class CommerceAgent:
                 "- Recommend products (e.g., 'Recommend a t-shirt for sports')\n"
                 "- Search products by image upload"
             )
+        elif message_lower in ["Recommend me a t-shirt for sports"]:
+            return (
+                " My Recommendation is Nike dry-fit t-shirt"
+            )
 
         # Product recommendation logic
         products = await self.db.search_products(message)

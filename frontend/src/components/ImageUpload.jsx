@@ -17,7 +17,7 @@ function ImageUpload() {
     try {
       // Update to API Gateway URL in production
       const response = await axios.post(
-        "https://<api-id>.execute-api.<region>.amazonaws.com/dev/image-search",
+        "https://cwxb04pos2.execute-api.us-east-1.amazonaws.com/prod/image-search",
         formData
       );
       setResults(response.data.products);
