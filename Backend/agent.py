@@ -1,36 +1,73 @@
 import os
+import logging
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
-from product_db import ProductDatabase
+from product_db import AmazonProductClient
 
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 class CommerceAgent:
     def __init__(self):
-        self.db = ProductDatabase()
+        self.db = AmazonProductClient()
         self.name = "CommerceBot"
-        # Configure OpenAI
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY"))
+
+        openai_key = os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if openai_key:
+            from openai import AsyncOpenAI
+            self.client = AsyncOpenAI(api_key=openai_key)
+            self.simulated = False
+        else:
+            logger.warning("OpenAI API key missing. Using simulated assistant responses.")
+            self.client = None
+            self.simulated = True
 
     async def handle_message(self, message: str) -> str:
-        prompt = f"""
-        You are CommerceBot, a shopping assistant for a commerce website. Your tasks:
-        1. Handle general conversation (e.g., respond to "What's your name?" or "What can you do?").
-        2. Provide product recommendations based on user input (e.g., "Recommend me a t-shirt for sports").
-        3. Use the provided product database context to make accurate recommendations.
-        Product Database: {self.db.get_all_products()}
-        User Message: {message}
-        Respond concisely and naturally, focusing on the user's intent.
-        """
+        logger.info(f"Processing message: {message}")
+
+        message_lower = message.lower().strip()
+        if message_lower in ["what's your name?", "who are you?"]:
+            return f"I'm {self.name}, your shopping assistant! I can recommend products or search based on images."
+        elif message_lower in ["what can you do?", "help"]:
+            return (
+                "I can:\n"
+                "- Answer questions about myself\n"
+                "- Recommend products (e.g., 'Recommend a t-shirt for sports')\n"
+                "- Search products by image upload"
+            )
+
+        # Product recommendation logic
+        products = await self.db.search_products(message)
+
+        if self.simulated:
+            if products:
+                return f"Here are some products I found: {', '.join(p['name'] for p in products)}"
+            else:
+                return "I couldn't find any matching products. Try a different query."
+
+        # Real OpenAI request
         try:
+            product_context = str(products) if products else "No products found in the database."
+            prompt = f"""
+            You are {self.name}, a shopping assistant for a commerce website.
+            Your task is to provide product recommendations based on the user's input.
+            Use the provided product data to make accurate recommendations.
+            Product Data: {product_context}
+            User Message: {message}
+            Respond concisely and naturally, recommending up to 3 products if possible.
+            If no products match, suggest checking back later or broadening the search.
+            """
             response = await self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": message}
                 ],
-                max_tokens=150
+                max_tokens=200
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Error: Could not process request. {str(e)}"
+            logger.error(f"Error processing message: {str(e)}")
+            return "Sorry, I couldn't process your request. Please try again later."
